@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Greyed-out button styling */
+      .disabled-btn {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Register</h1>
+      <form id="register-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required />
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" required />
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" required />
+
+        <label for="phone">Phone:</label>
+        <input type="text" id="phone" required />
+
+        <button type="submit">Register</button>
+        <button onclick="window.location.href='/index.html'">
+          Go to login page
+        </button>
+      </form>
+      <div id="message"></div>
+      <div id="verification-section" style="display: none">
+        <label for="verification-code">Enter Verification Code:</label>
+        <input type="text" id="verification-code" required />
+        <button id="verify-email-code-btn">Verify Code</button>
+        <button id="resend-email-code-btn" class="disabled-btn" disabled>
+          Resend Code
+        </button>
+        <p id="timer-message"></p>
+      </div>
+
+      <script>
+        function isPasswordValid(password) {
+          const regex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+          return regex.test(password);
+        }
+
+        // Function to partially mask email
+        function maskEmail(email) {
+          const [localPart, domain] = email.split("@");
+          const maskedLocalPart = localPart.slice(0, 3) + "****";
+          return maskedLocalPart + "@" + domain;
+        }
+
+        //register
+        document
+          .getElementById("register-form")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const phone = document.getElementById("phone").value;
+
+            if (!isPasswordValid(password)) {
+              document.getElementById("message").innerText =
+                "Password must contain at least one uppercase and one lowercase letter and be at least 8 characters long.";
+              return;
+            }
+
+            const response = await fetch("/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name, email, password, phone }),
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+              const maskedEmail = maskEmail(email);
+              document.getElementById(
+                "message"
+              ).innerText = `Verification code sent to your email: ${maskedEmail}`;
+              document.getElementById("verification-section").style.display =
+                "block";
+              startCountdown(); // Start countdown for resend button
+            } else {
+              document.getElementById("message").innerText = data.message;
+            }
+          });
+        // verify the email
+        document
+          .getElementById("verify-email-code-btn")
+          .addEventListener("click", async () => {
+            const email = document.getElementById("email").value;
+            const code = document.getElementById("verification-code").value;
+            const name = document.getElementById("name").value;
+            const password = document.getElementById("password").value;
+            const phone = document.getElementById("phone").value;
+
+            const response = await fetch("/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, code, name, password, phone }),
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+              document.getElementById("message").innerText =
+                "Verification successful, account created!";
+              setTimeout(() => (window.location.href = "/index.html"), 2000);
+            } else {
+              document.getElementById("message").innerText = data.message;
+            }
+          });
+        // function for countdown
+        function startCountdown() {
+          let countdown = 60;
+          const timerMessage = document.getElementById("timer-message");
+          const resendBtn = document.getElementById("resend-email-code-btn");
+
+          resendBtn.classList.add("disabled-btn");
+          resendBtn.disabled = true;
+          timerMessage.innerText = `Please wait ${countdown} seconds before resending code.`;
+
+          const interval = setInterval(() => {
+            countdown--;
+            timerMessage.innerText = `Please wait ${countdown} seconds before resending code.`;
+
+            if (countdown === 0) {
+              clearInterval(interval);
+              resendBtn.classList.remove("disabled-btn");
+              resendBtn.disabled = false;
+              timerMessage.innerText = "";
+            }
+          }, 1000);
+        }
+
+        // Resend email code
+        document
+          .getElementById("resend-email-code-btn")
+          .addEventListener("click", async () => {
+            const email = document.getElementById("email").value;
+
+            const response = await fetch("/reSendEmailCode", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email }),
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+              const maskedEmail = maskEmail(email);
+              document.getElementById(
+                "message"
+              ).innerText = `A new verification code has been sent to your email: ${maskedEmail}`;
+              startCountdown();
+            } else {
+              document.getElementById("message").innerText = data.message;
+            }
+          });
+      </script>
+    </div>
+  </body>
+</html>
