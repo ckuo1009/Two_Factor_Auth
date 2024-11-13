@@ -13,7 +13,7 @@ const {
 const SECRET_KEY = "cs166";
 
 // api key for email
-sgMail.setApiKey("use the real APIkey ");
+sgMail.setApiKey("use the real APIkey "); // Replace with  real API key for running the project
 
 //register
 exports.register = async (req, res) => {

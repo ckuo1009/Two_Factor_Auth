@@ -11,7 +11,7 @@ const {
 
 const SECRET_KEY = "cs166";
 
-sgMail.setApiKey("use the real APIkey ");
+sgMail.setApiKey("use the real APIkey "); // Replace with  real API key for running the project
 
 // JWT
 exports.authenticateToken = (req, res, next) => {
